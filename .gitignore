@@ -1,0 +1,21 @@
+# IDEA
+.idea/
+*.iml
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# 前端
+node_modules/
+dist/
+
+# 系统/临时
+.DS_Store
+Thumbs.db
+
+# 敏感信息
+密码.txt
+*.pwd
