@@ -1,21 +1,37 @@
-# IDEA
+# === IDEA ===
 .idea/
 *.iml
+*.iws
 
-# Python
+# === Java/Maven ===
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# === Python ===
 venv/
 __pycache__/
 *.pyc
 *.pyo
+*.egg-info/
+dist/
+build/
 
-# 前端
+# === 前端 ===
 node_modules/
 dist/
+.vite/
+*.local
 
-# 系统/临时
+# === 系统/临时 ===
 .DS_Store
 Thumbs.db
+*.log
+*.tmp
 
-# 敏感信息
+# === 敏感信息 ===
 密码.txt
 *.pwd
+*.key
+application-local.yml
