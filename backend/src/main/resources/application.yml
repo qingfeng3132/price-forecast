@@ -8,4 +8,4 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
 mybatis:
   configuration:
-    map-underscore-to-camel-case: ture
+    map-underscore-to-camel-case: true

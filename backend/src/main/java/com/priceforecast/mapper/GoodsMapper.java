@@ -11,7 +11,7 @@ import java.util.List;
 @Mapper
 public interface GoodsMapper {
     @Select("SELECT * FROM goods WHERE id =#{id}")
-    Goods selectById (long id);
+    Goods selectById (Long id);
 
 
     @Select("SELECT * FROM goods")
