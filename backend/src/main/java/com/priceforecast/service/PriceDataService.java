@@ -11,4 +11,6 @@ public interface PriceDataService {
 
     List<PriceData>queryByGoodsAndDateRange(Long goodsId, LocalDate startDate,LocalDate endDate);
 
+    int batchInsert(List<PriceData> list);
+
 }

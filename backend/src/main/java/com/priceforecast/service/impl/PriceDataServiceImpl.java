@@ -22,5 +22,14 @@ public class PriceDataServiceImpl  implements PriceDataService {
         return priceDataMapper.selectByGoodsAndDateRange(goodsId, startDate, endDate);
     }
 
+    @Override
+    public int batchInsert(List<PriceData> list) {
+        int count = 0;
+        for (PriceData item : list) {
+            count += priceDataMapper.insert(item);
+        }
+        return count;
+    }
+
 
 }

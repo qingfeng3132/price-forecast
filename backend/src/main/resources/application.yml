@@ -2,10 +2,12 @@ spring:
   application:
     name: price-forecast-backend
   datasource:
-    url: jdbc:mysql://localhost:3306/price_forecast?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false
+    url: jdbc:mysql://localhost:3306/price_forecast?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: root
     password: Price@2026
     driver-class-name: com.mysql.cj.jdbc.Driver
+server:
+  port: 8080
 mybatis:
   configuration:
     map-underscore-to-camel-case: true

@@ -12,6 +12,7 @@ public class PriceData {
     private Long goodsId;
     private BigDecimal price;
     private String priceUnit;
+    private String region;
     private LocalDate priceDate;
     private BigDecimal changeRate;
     private String sourceUrl;
