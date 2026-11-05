@@ -35,3 +35,5 @@ Thumbs.db
 *.pwd
 *.key
 application-local.yml
+.env
+agent/.env
