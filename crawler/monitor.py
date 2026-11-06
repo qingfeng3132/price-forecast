@@ -27,11 +27,23 @@ DB_CONFIG = {
     "charset": "utf8mb4",
 }
 
-# 监控的品种：猪肉=4, 玉米=34, 鲜苹果=35
-MONITOR_GOODS = [4, 34, 35]
+# 监控的品种：动态从"期货农产品"分类读取（不再写死）
+# 在 main() 里通过 get_monitor_goods() 动态获取
 
 # 默认阈值（%）：alert_threshold 表里没有配置时的兜底
 DEFAULT_THRESHOLD = 10.0
+
+
+def get_monitor_goods(conn):
+    """动态读取"期货农产品"分类下的所有商品 id"""
+    sql = """
+        SELECT id FROM goods
+        WHERE category_id = (SELECT id FROM goods_category WHERE category_code='FUTURES')
+        ORDER BY id
+    """
+    with conn.cursor() as cur:
+        cur.execute(sql)
+        return [row[0] for row in cur.fetchall()]
 
 
 def get_conn():
@@ -92,7 +104,9 @@ def main():
     conn = get_conn()
     try:
         print("=== 价格监控巡检 ===")
-        for gid in MONITOR_GOODS:
+        monitor_goods = get_monitor_goods(conn)
+        print(f"监控品种数：{len(monitor_goods)}")
+        for gid in monitor_goods:
             # 查商品名
             with conn.cursor() as cur:
                 cur.execute("SELECT goods_name FROM goods WHERE id=%s", (gid,))

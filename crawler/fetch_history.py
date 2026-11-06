@@ -2,10 +2,7 @@
 """
 第三周 · 历史数据补全脚本
 数据源：东方财富期货行情（通过 akshare 封装）
-品种映射：
-    生猪主力连续 LH0  -> 猪肉   (goods_code=G001)
-    玉米主力连续 C0   -> 玉米   (goods_code=G031, 替代小麦)
-    鲜苹果主力连续 AP0 -> 鲜苹果 (goods_code=G032, 替代蔬菜)
+品种：25 个农产品期货主力连续品种（动态从 futures_catalog 获取）
 流程：akshare 拉日K -> 清洗(取收盘价/算涨跌幅) -> 直接连 MySQL 批量入库
 """
 import os
@@ -21,6 +18,8 @@ os.environ["no_proxy"] = "*"
 
 import akshare as ak  # noqa: E402  (必须在设置 NO_PROXY 之后导入)
 
+from futures_catalog import get_catalog, AGRICULTURE, SYMBOL_TO_EXISTING_GOODS  # noqa: E402
+
 # ② 数据库连接配置（与后端 application.yml 保持一致）
 DB_CONFIG = {
     "host": "localhost",
@@ -31,16 +30,10 @@ DB_CONFIG = {
     "charset": "utf8mb4",
 }
 
-# ③ 品种映射：期货主力代码 -> (goods_code, 中文名)
-#    symbol 用主力连续代码（末尾 0），新浪源约定：LH0/C0/AP0
-GOODS_MAP = {
-    "LH0": "G001",   # 生猪 -> 猪肉
-    "C0": "G031",    # 玉米 -> 玉米(替代小麦)
-    "AP0": "G032",   # 鲜苹果 -> 鲜苹果(替代蔬菜)
-}
-
-# ④ 数据起止日期：拉最近约 1.5 年的日 K（足够 ARIMA 训练）
-#    START_DATE 固定为 2025 年初，END_DATE 动态取"今天"，保证每次运行都拉到最新交易日
+# ③ 品种映射：从 futures_catalog 动态获取农产品期货品种 -> goods_id
+#    不再写死，而是：
+#      a. 用 futures_catalog 拿到 25 个农产品品种的 symbol
+#      b. 结合 symbol->goods_code 映射 + goods 表查询，得到 symbol -> goods_id
 START_DATE = "20250101"
 
 
@@ -65,6 +58,25 @@ def goods_code_to_id(conn, goods_code):
     if row is None:
         raise ValueError(f"goods 表里找不到 goods_code={goods_code}")
     return row[0]
+
+
+def get_symbol_goods_map(conn):
+    """
+    动态构建 symbol -> goods_id 映射
+    数据源：25 个农产品期货品种（futures_catalog）
+    对每个 symbol：
+      - 能对上的（SYMBOL_TO_EXISTING_GOODS）-> 用现有 goods_code 查 id
+      - 其余 -> goods_code 就是 symbol 本身，直接查 id
+    """
+    catalog = get_catalog()
+    agri = [c for c in catalog if c["category_code"] == AGRICULTURE]
+    mapping = {}
+    for c in agri:
+        symbol = c["symbol"]
+        goods_code = SYMBOL_TO_EXISTING_GOODS.get(symbol, symbol)
+        goods_id = goods_code_to_id(conn, goods_code)
+        mapping[symbol] = goods_id
+    return mapping
 
 
 def fetch_futures_daily(symbol):
@@ -125,22 +137,25 @@ def save_to_db(conn, goods_id, df, symbol):
 
 
 def main():
-    """主流程：遍历品种 -> 拉数据 -> 入库"""
+    """主流程：动态获取 25 个农产品品种 -> 拉数据 -> 入库"""
     conn = get_conn()
     try:
-        for symbol, goods_code in GOODS_MAP.items():
-            print(f"\n=== 处理品种 {symbol} ({goods_code}) ===")
-            # 1. 查 goods.id
-            goods_id = goods_code_to_id(conn, goods_code)
-            print(f"  goods_id = {goods_id}")
+        # 动态获取 symbol -> goods_id 映射
+        symbol_map = get_symbol_goods_map(conn)
+        print(f"共 {len(symbol_map)} 个农产品期货品种")
 
-            # 2. 拉历史日 K
-            df = fetch_futures_daily(symbol)
-            print(f"  拉取到 {len(df)} 条日 K 数据，日期范围 {df['price_date'].min()} ~ {df['price_date'].max()}")
+        for idx, (symbol, goods_id) in enumerate(symbol_map.items(), 1):
+            print(f"\n=== [{idx}/{len(symbol_map)}] 处理品种 {symbol} (goods_id={goods_id}) ===")
+            try:
+                # 拉历史日 K
+                df = fetch_futures_daily(symbol)
+                print(f"  拉取到 {len(df)} 条日 K 数据，日期范围 {df['price_date'].min()} ~ {df['price_date'].max()}")
 
-            # 3. 入库
-            n = save_to_db(conn, goods_id, df, symbol)
-            print(f"  已入库/更新 {n} 条")
+                # 入库
+                n = save_to_db(conn, goods_id, df, symbol)
+                print(f"  已入库/更新 {n} 条")
+            except Exception as e:
+                print(f"  [跳过] 该品种拉取失败: {type(e).__name__}: {e}")
     finally:
         conn.close()
     print("\n全部完成！")

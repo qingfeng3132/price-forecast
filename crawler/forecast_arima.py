@@ -179,15 +179,25 @@ def save_forecast(goods_id, result):
 
 
 def main():
-    """主流程：对 3 个预测品种逐个训练并预测"""
-    # 3 个品种的 goods_id：猪肉=4, 玉米=34, 鲜苹果=35
-    goods_ids = {
-        4: "猪肉",
-        34: "玉米",
-        35: "鲜苹果",
-    }
-    for gid, name in goods_ids.items():
-        print(f"\n{'='*50}")
+    """主流程：对"期货农产品"分类下的所有品种逐个训练并预测"""
+    # 动态读 goods 表：category_id=5（期货农产品）的所有商品
+    sql = """
+        SELECT id, goods_name FROM goods
+        WHERE category_id = (SELECT id FROM goods_category WHERE category_code='FUTURES')
+        ORDER BY id
+    """
+    with get_conn() as conn:
+        goods_list = pd.read_sql(sql, conn)
+
+    if goods_list.empty:
+        print("无期货农产品品种，请先运行 init_catalog.py 初始化")
+        return
+
+    print(f"共 {len(goods_list)} 个品种需要预测\n")
+    for _, row in goods_list.iterrows():
+        gid = int(row["id"])
+        name = row["goods_name"]
+        print(f"{'='*50}")
         print(f"=== 训练 {name}(goods_id={gid}) ===")
         try:
             result = train_and_forecast(gid)
