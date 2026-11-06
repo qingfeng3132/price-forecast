@@ -105,9 +105,9 @@ def train_and_forecast(goods_id):
     forecast_mean = forecast_result.predicted_mean
     conf_int = forecast_result.conf_int(alpha=0.05)  # 95% 置信区间
 
-    # 构造预测日期（从最后一天开始往后推，跳过周末会复杂，这里按自然日连续）
+    # 构造预测日期：从最后一天往后推，跳过周末（期货周六日不交易）
     last_date = df.index[-1]
-    forecast_dates = [last_date + datetime.timedelta(days=i) for i in range(1, FORECAST_DAYS + 1)]
+    forecast_dates = _next_trading_days(last_date, FORECAST_DAYS)
 
     forecast_df = pd.DataFrame({
         "forecast_date": forecast_dates,
@@ -123,6 +123,20 @@ def train_and_forecast(goods_id):
         "last_price": float(series.iloc[-1]),
         "last_date": last_date,
     }
+
+
+def _next_trading_days(start_date, n):
+    """
+    生成从 start_date 之后开始的 n 个交易日（跳过周六、周日）
+    期货市场只在周一到周五交易
+    """
+    days = []
+    d = start_date + datetime.timedelta(days=1)
+    while len(days) < n:
+        if d.weekday() < 5:  # 0=周一 ... 4=周五，5=周六 6=周日
+            days.append(d)
+        d += datetime.timedelta(days=1)
+    return days
 
 
 def save_forecast(goods_id, result):

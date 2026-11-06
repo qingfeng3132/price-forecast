@@ -29,6 +29,7 @@ dist/
 Thumbs.db
 *.log
 *.tmp
+output/
 
 # === 敏感信息 ===
 密码.txt

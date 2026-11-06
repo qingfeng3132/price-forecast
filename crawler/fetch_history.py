@@ -40,8 +40,13 @@ GOODS_MAP = {
 }
 
 # ④ 数据起止日期：拉最近约 1.5 年的日 K（足够 ARIMA 训练）
+#    START_DATE 固定为 2025 年初，END_DATE 动态取"今天"，保证每次运行都拉到最新交易日
 START_DATE = "20250101"
-END_DATE = "20261102"
+
+
+def get_end_date():
+    """动态计算结束日期 = 今天（保证每次运行都拉到最新数据）"""
+    return datetime.date.today().strftime("%Y%m%d")
 
 # 价格单位：期货统一为 元/吨
 PRICE_UNIT = "元/吨"
@@ -66,11 +71,12 @@ def fetch_futures_daily(symbol):
     """
     用 akshare 拉某个期货主力连续的日 K
     返回 DataFrame：日期 / 收盘价 / 涨跌幅
+    end_date 动态取今天，保证每次运行都拉到最新交易日数据
     """
     df = ak.futures_main_sina(
         symbol=symbol,
         start_date=START_DATE,
-        end_date=END_DATE,
+        end_date=get_end_date(),
     )
     # 列名是中文：日期 开盘价 最高价 最低价 收盘价 ...
     df = df.rename(columns={
