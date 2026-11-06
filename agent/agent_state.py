@@ -101,9 +101,8 @@ class PriceAgentStateMachine:
         self.history = []       # 对话历史（用于多轮指代消解）
 
     def _build_goods_names(self):
-        """从后端查 goods 表，得到 goods_id -> 名称 映射（用于追问时列出可选商品）"""
-        # 简化：用 intent 模块里预设的映射
-        return intent_module.GOODS_ID_MAP
+        """从后端动态查"期货农产品"分类的商品名列表（用于追问时列出可选商品）"""
+        return intent_module.list_goods_names()
 
     def handle(self, user_text):
         """
@@ -192,7 +191,7 @@ class PriceAgentStateMachine:
 
     def _ask_goods(self, intent_type):
         """追问：信息不全时反问用户指定商品"""
-        names = "、".join(intent_module.GOODS_ID_MAP.keys())
+        names = "、".join(self._build_goods_names())
         action_map = {
             "price_query": "查询价格",
             "forecast": "预测价格",
