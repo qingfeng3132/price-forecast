@@ -180,14 +180,19 @@ class PriceAgentStateMachine:
         return "无法处理该意图"
 
     def _agent_chat(self, user_text):
-        """闲聊：直接用 AgentScope Agent 回复"""
-        try:
-            msg = UserMsg(name="user", content=user_text)
-            reply = self.agent.reply(msg)
-            # 提取文本内容
-            return str(reply.get_text_content())
-        except Exception as e:
-            return f"[回复失败] {e}"
+        """
+        闲聊：返回友好引导。
+        说明：AgentScope 2.0 的 Agent.reply() 是异步方法，需事件循环才能调用；
+        而闲聊本就不需要调大模型，这里直接返回引导语，更简单可靠。
+        """
+        return (
+            "您好，我是商品价格预测助手。您可以这样问我：\n"
+            "  · 查价格：查猪肉最近30天价格\n"
+            "  · 预测：预测豆粕未来7天走势\n"
+            "  · 告警：看看最近有没有价格告警\n"
+            "  · 阈值：设置鸡蛋阈值到15%\n"
+            "请问有什么可以帮您？"
+        )
 
     def _ask_goods(self, intent_type):
         """追问：信息不全时反问用户指定商品"""
